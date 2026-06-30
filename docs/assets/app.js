@@ -1,0 +1,122 @@
+(() => {
+  const qInput = document.getElementById("q");
+  const statusSelect = document.getElementById("status");
+  const historyCheckbox = document.getElementById("history");
+  const reloadButton = document.getElementById("reload");
+  const meta = document.getElementById("meta");
+  const tableBody = document.getElementById("tableBody");
+
+  let allItems = [];
+
+  function escapeHtml(text) {
+    return (text || "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  }
+
+  function badgeClass(status) {
+    return status === "GA" ? "ga" : "preview";
+  }
+
+  function renderRows(items) {
+    if (!items.length) {
+      tableBody.innerHTML = "<tr><td colspan=\"6\">No matching rows.</td></tr>";
+      return;
+    }
+
+    tableBody.innerHTML = items.map((item) => {
+      const title = escapeHtml(item.title || "-");
+      const link = item.learn_more_url
+        ? `<a href="${escapeHtml(item.learn_more_url)}" target="_blank" rel="noreferrer">${title}</a>`
+        : title;
+
+      return `
+        <tr>
+          <td><span class="badge ${badgeClass(item.status)}">${escapeHtml(item.status || "-")}</span></td>
+          <td>${link}</td>
+          <td>${escapeHtml(item.month_label || "-")}</td>
+          <td>${escapeHtml(item.category || "-")}</td>
+          <td>${escapeHtml(item.summary || "-")}</td>
+          <td>${item.is_active ? "Active" : "Historical"}</td>
+        </tr>
+      `;
+    }).join("");
+  }
+
+  function applyFilters() {
+    const q = (qInput.value || "").trim().toLowerCase();
+    const status = statusSelect.value;
+    const includeHistory = historyCheckbox.checked;
+
+    const filtered = allItems.filter((item) => {
+      if (!includeHistory && !item.is_active) {
+        return false;
+      }
+
+      if (status !== "All" && item.status !== status) {
+        return false;
+      }
+
+      if (!q) {
+        return true;
+      }
+
+      const blob = `${item.title || ""} ${item.summary || ""} ${item.category || ""}`.toLowerCase();
+      return blob.includes(q);
+    });
+
+    renderRows(filtered);
+  }
+
+  function formatUtc(value) {
+    if (!value) {
+      return "unknown";
+    }
+
+    const dt = new Date(value);
+    if (Number.isNaN(dt.getTime())) {
+      return value;
+    }
+
+    return dt.toLocaleString();
+  }
+
+  async function loadData() {
+    meta.textContent = "Loading data...";
+
+    try {
+      const response = await fetch(`data/releases.json?t=${Date.now()}`, { cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      const payload = await response.json();
+      allItems = Array.isArray(payload.items) ? payload.items : [];
+
+      const stats = payload.stats || {};
+      meta.innerHTML = `
+        Last updated: <span class="mono">${escapeHtml(formatUtc(payload.last_updated_utc))}</span>
+        | total ${Number(stats.total_items || 0)}
+        | active ${Number(stats.active_items || 0)}
+        | inserted ${Number(stats.inserted || 0)}
+        | updated ${Number(stats.updated || 0)}
+        | superseded ${Number(stats.superseded || 0)}
+      `;
+
+      applyFilters();
+    } catch (error) {
+      meta.textContent = `Could not load data: ${error.message}`;
+      tableBody.innerHTML = "<tr><td colspan=\"6\">Data load failed.</td></tr>";
+    }
+  }
+
+  qInput.addEventListener("input", applyFilters);
+  statusSelect.addEventListener("change", applyFilters);
+  historyCheckbox.addEventListener("change", applyFilters);
+  reloadButton.addEventListener("click", loadData);
+
+  loadData();
+})();

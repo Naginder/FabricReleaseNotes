@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fabric Release Timeline (GitHub Pages)</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <header class="hero">
+    <h1>Microsoft Fabric Release Timeline</h1>
+    <p>GitHub Pages edition with repo-backed JSON persistence.</p>
+  </header>
+
+  <main class="container">
+    <section class="panel">
+      <div class="filters">
+        <input id="q" type="text" placeholder="Search title, summary, category">
+        <select id="status">
+          <option value="All">All</option>
+          <option value="GA">GA</option>
+          <option value="Preview">Preview</option>
+        </select>
+        <label class="checkbox">
+          <input id="history" type="checkbox">
+          Include historical rows
+        </label>
+        <button id="reload" type="button">Reload Data</button>
+      </div>
+      <div class="meta" id="meta">Loading data...</div>
+    </section>
+
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Title</th>
+            <th>Month</th>
+            <th>Category</th>
+            <th>Summary</th>
+            <th>State</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="assets/app.js"></script>
+</body>
+</html>
