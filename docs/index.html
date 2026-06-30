@@ -35,8 +35,16 @@
         <thead>
           <tr>
             <th>Status</th>
-            <th>Title</th>
-            <th>Month</th>
+            <th>
+              <button type="button" class="sort-btn" data-sort-key="title" aria-label="Sort by title">
+                Title <span class="sort-indicator" aria-hidden="true"></span>
+              </button>
+            </th>
+            <th>
+              <button type="button" class="sort-btn" data-sort-key="date" aria-label="Sort by date">
+                Date <span class="sort-indicator" aria-hidden="true"></span>
+              </button>
+            </th>
             <th>Category</th>
             <th>Summary</th>
             <th>State</th>

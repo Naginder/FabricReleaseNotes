@@ -5,8 +5,13 @@
   const reloadButton = document.getElementById("reload");
   const meta = document.getElementById("meta");
   const tableBody = document.getElementById("tableBody");
+  const sortButtons = Array.from(document.querySelectorAll(".sort-btn"));
 
   let allItems = [];
+  const sortState = {
+    key: null,
+    direction: "asc",
+  };
 
   function escapeHtml(text) {
     return (text || "")
@@ -46,6 +51,55 @@
     }).join("");
   }
 
+  function parseDateValue(value) {
+    const clean = (value || "").trim();
+    if (!clean || clean === "-") {
+      return Number.POSITIVE_INFINITY;
+    }
+
+    const ts = Date.parse(`1 ${clean}`);
+    if (!Number.isNaN(ts)) {
+      return ts;
+    }
+
+    return clean.toLowerCase();
+  }
+
+  function compareItems(a, b, key, direction) {
+    const dir = direction === "asc" ? 1 : -1;
+
+    if (key === "title") {
+      const aTitle = (a.title || "").toLowerCase();
+      const bTitle = (b.title || "").toLowerCase();
+      return aTitle.localeCompare(bTitle) * dir;
+    }
+
+    const aDate = parseDateValue(a.month_label || "");
+    const bDate = parseDateValue(b.month_label || "");
+
+    if (typeof aDate === "string" || typeof bDate === "string") {
+      return String(aDate).localeCompare(String(bDate)) * dir;
+    }
+
+    return (aDate - bDate) * dir;
+  }
+
+  function updateSortIndicators() {
+    sortButtons.forEach((btn) => {
+      const indicator = btn.querySelector(".sort-indicator");
+      if (!indicator) {
+        return;
+      }
+
+      if (btn.dataset.sortKey !== sortState.key) {
+        indicator.textContent = "";
+        return;
+      }
+
+      indicator.textContent = sortState.direction === "asc" ? "▲" : "▼";
+    });
+  }
+
   function applyFilters() {
     const q = (qInput.value || "").trim().toLowerCase();
     const status = statusSelect.value;
@@ -68,7 +122,12 @@
       return blob.includes(q);
     });
 
+    if (sortState.key) {
+      filtered.sort((a, b) => compareItems(a, b, sortState.key, sortState.direction));
+    }
+
     renderRows(filtered);
+    updateSortIndicators();
   }
 
   function formatUtc(value) {
@@ -117,6 +176,24 @@
   statusSelect.addEventListener("change", applyFilters);
   historyCheckbox.addEventListener("change", applyFilters);
   reloadButton.addEventListener("click", loadData);
+
+  sortButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const key = btn.dataset.sortKey;
+      if (!key) {
+        return;
+      }
+
+      if (sortState.key === key) {
+        sortState.direction = sortState.direction === "asc" ? "desc" : "asc";
+      } else {
+        sortState.key = key;
+        sortState.direction = "asc";
+      }
+
+      applyFilters();
+    });
+  });
 
   loadData();
 })();
