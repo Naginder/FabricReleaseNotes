@@ -5,7 +5,7 @@
   const reloadButton = document.getElementById("reload");
   const meta = document.getElementById("meta");
   const tableBody = document.getElementById("tableBody");
-  const sortButtons = Array.from(document.querySelectorAll(".sort-btn"));
+  const sortHeaders = Array.from(document.querySelectorAll("th.sortable[data-sort-key]"));
 
   let allItems = [];
   const sortState = {
@@ -88,18 +88,18 @@
   }
 
   function updateSortIndicators() {
-    sortButtons.forEach((btn) => {
-      const indicator = btn.querySelector(".sort-indicator");
+    sortHeaders.forEach((th) => {
+      const indicator = th.querySelector(".sort-indicator");
       if (!indicator) {
         return;
       }
-
-      if (btn.dataset.sortKey !== sortState.key) {
+      if (th.dataset.sortKey !== sortState.key) {
         indicator.textContent = "";
+        th.removeAttribute("aria-sort");
         return;
       }
-
       indicator.textContent = sortState.direction === "asc" ? "▲" : "▼";
+      th.setAttribute("aria-sort", sortState.direction === "asc" ? "ascending" : "descending");
     });
   }
 
@@ -175,28 +175,33 @@
     }
   }
 
+  function toggleSort(key) {
+    if (!key) {
+      return;
+    }
+    if (sortState.key === key) {
+      sortState.direction = sortState.direction === "asc" ? "desc" : "asc";
+    } else {
+      sortState.key = key;
+      sortState.direction = "asc";
+    }
+    applyFilters();
+  }
+
+  sortHeaders.forEach((th) => {
+    th.addEventListener("click", () => toggleSort(th.dataset.sortKey));
+    th.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        toggleSort(th.dataset.sortKey);
+      }
+    });
+  });
+
   qInput.addEventListener("input", applyFilters);
   statusSelect.addEventListener("change", applyFilters);
   historyCheckbox.addEventListener("change", applyFilters);
   reloadButton.addEventListener("click", loadData);
-
-  sortButtons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const key = btn.dataset.sortKey;
-      if (!key) {
-        return;
-      }
-
-      if (sortState.key === key) {
-        sortState.direction = sortState.direction === "asc" ? "desc" : "asc";
-      } else {
-        sortState.key = key;
-        sortState.direction = "asc";
-      }
-
-      applyFilters();
-    });
-  });
 
   loadData();
 })();
