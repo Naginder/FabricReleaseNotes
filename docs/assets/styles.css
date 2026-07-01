@@ -36,6 +36,20 @@ body {
   color: var(--muted);
 }
 
+.hero-link-row {
+  margin-top: 0.75rem;
+}
+
+.hero-link-row a {
+  color: var(--primary);
+  font-weight: 600;
+  text-decoration-thickness: 2px;
+}
+
+.hero-link-row a:hover {
+  text-decoration: underline;
+}
+
 .container {
   width: min(1200px, 95vw);
   margin: 0 auto 2rem;
