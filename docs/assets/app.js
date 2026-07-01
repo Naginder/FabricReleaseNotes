@@ -38,6 +38,9 @@
         ? `<a href="${escapeHtml(item.learn_more_url)}" target="_blank" rel="noreferrer">${title}</a>`
         : title;
 
+      const stateLabel = item.is_active ? "Active" : "Superseded";
+      const stateClass = item.is_active ? "state-active" : "state-superseded";
+
       return `
         <tr>
           <td><span class="badge ${badgeClass(item.status)}">${escapeHtml(item.status || "-")}</span></td>
@@ -45,7 +48,7 @@
           <td>${escapeHtml(item.month_label || "-")}</td>
           <td>${escapeHtml(item.category || "-")}</td>
           <td>${escapeHtml(item.summary || "-")}</td>
-          <td>${item.is_active ? "Active" : "Historical"}</td>
+          <td><span class="${stateClass}">${stateLabel}</span></td>
         </tr>
       `;
     }).join("");

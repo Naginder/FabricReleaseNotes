@@ -160,6 +160,16 @@ thead th .sort-btn:hover {
   background: var(--preview-soft);
 }
 
+.state-active {
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.state-superseded {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
 .mono {
   font-family: Consolas, "Courier New", monospace;
 }

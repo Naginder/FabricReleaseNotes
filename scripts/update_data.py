@@ -228,27 +228,59 @@ def upsert_items(existing: dict, fetched_items: Iterable[FeatureItem]) -> tuple[
     return inserted, updated, unchanged
 
 
-def supersede_preview_rows(existing: dict) -> int:
+_STATUS_RANK = {"GA": 2, "Preview": 1}
+
+
+def _date_sort_key(month_label: str | None) -> int:
+    """Return a sortable integer for a month_label string.
+    Rows with a date sort higher than rows without one."""
+    if not month_label:
+        return 0
+    ts = None
+    import datetime as _dt
+    for fmt in ("%B %Y", "%b %Y"):
+        try:
+            ts = int(_dt.datetime.strptime(month_label.strip(), fmt).timestamp())
+            break
+        except ValueError:
+            pass
+    return ts if ts is not None else 1  # unknown but present beats absent
+
+
+def deduplicate_items(existing: dict) -> int:
+    """Within each lifecycle group, keep the single best active row and
+    supersede all others.  Ranking priority (highest wins):
+      1. GA status over Preview
+      2. Has a month/date over no date
+      3. Most recent date
+    """
     now = utc_now_iso()
     items = existing["items"]
-    active_ga = {}
 
+    from collections import defaultdict
+    groups: dict[str, list[dict]] = defaultdict(list)
     for row in items:
-        if row.get("status") == "GA" and row.get("is_active"):
-            active_ga[row.get("lifecycle_group_key")] = row.get("unique_key")
+        if row.get("is_active"):
+            groups[row.get("lifecycle_group_key", "")].append(row)
 
     superseded = 0
-    for row in items:
-        if row.get("status") != "Preview":
-            continue
-        if not row.get("is_active"):
+    for group_rows in groups.values():
+        if len(group_rows) < 2:
             continue
 
-        ga_key = active_ga.get(row.get("lifecycle_group_key"))
-        if ga_key:
-            row["is_active"] = False
-            row["superseded_by_key"] = ga_key
-            row["updated_utc"] = now
+        def rank(row: dict) -> tuple:
+            return (
+                _STATUS_RANK.get(row.get("status", ""), 0),
+                1 if row.get("month_label") else 0,
+                _date_sort_key(row.get("month_label")),
+            )
+
+        group_rows.sort(key=rank, reverse=True)
+        winner = group_rows[0]
+        for loser in group_rows[1:]:
+            loser["is_active"] = False
+            loser["superseded_by_key"] = winner["unique_key"]
+            loser["updated_utc"] = now
             superseded += 1
 
     return superseded
@@ -269,7 +301,7 @@ def main() -> None:
     fetched = fetch_features()
 
     inserted, updated, unchanged = upsert_items(existing, fetched)
-    superseded = supersede_preview_rows(existing)
+    superseded = deduplicate_items(existing)
 
     items = existing.get("items", [])
     active_items = sum(1 for item in items if item.get("is_active"))
