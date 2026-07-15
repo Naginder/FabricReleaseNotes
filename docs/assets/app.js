@@ -5,6 +5,7 @@
   const reloadButton = document.getElementById("reload");
   const meta = document.getElementById("meta");
   const tableBody = document.getElementById("tableBody");
+  const themeToggle = document.getElementById("themeToggle");
   const sortHeaders = Array.from(document.querySelectorAll("th.sortable[data-sort-key]"));
 
   let allItems = [];
@@ -202,6 +203,36 @@
   statusSelect.addEventListener("change", applyFilters);
   historyCheckbox.addEventListener("change", applyFilters);
   reloadButton.addEventListener("click", loadData);
+
+  function applyTheme(isDark) {
+    if (isDark) {
+      document.documentElement.dataset.theme = "dark";
+    } else {
+      delete document.documentElement.dataset.theme;
+    }
+
+    if (themeToggle) {
+      themeToggle.setAttribute("aria-checked", isDark ? "true" : "false");
+      themeToggle.setAttribute("aria-label", isDark ? "Switch to light theme" : "Switch to dark theme");
+      const icon = themeToggle.querySelector(".toggle-icon");
+      const label = themeToggle.querySelector(".toggle-label");
+      if (icon) {
+        icon.textContent = isDark ? "\uD83C\uDF19" : "\u2600\uFE0F";
+      }
+      if (label) {
+        label.textContent = isDark ? "Dark" : "Light";
+      }
+    }
+  }
+
+  if (themeToggle) {
+    themeToggle.addEventListener("click", () => {
+      const isDark = themeToggle.getAttribute("aria-checked") === "true";
+      applyTheme(!isDark);
+    });
+  }
+
+  applyTheme(false);
 
   loadData();
 })();
